@@ -1,41 +1,74 @@
-A hands-on security operations lab built to simulate attack detection, investigation, and incident documentation using Splunk Cloud.
+# Lab Setup
 
-Environment: Windows 11 (monitored endpoint) · Kali Linux (attacker) · Metasploitable (vulnerable target) — all on a local, isolated virtual network.
+## Network diagram
 
-Analyst: Marc Tomek Lawrence — LinkedIn
+*(Add a screenshot or simple diagram here — even a hand-drawn box diagram exported as PNG works. Show: Windows 11, Kali, Metasploitable, and their IPs on the isolated virtual network.)*
 
-Why this lab
+## 1. Endpoint visibility without Sysmon
 
-I built this to apply SOC skills I use on the job (SIEM monitoring, log analysis, alert triage) against real attacks I control end-to-end — generating the traffic, detecting it in Splunk, and documenting the investigation the way I would for a real incident.
+Sysmon wasn't available in this environment, so endpoint visibility was built entirely on native Windows auditing — which is worth documenting on its own, since many real environments run without Sysmon too.
 
-Lab architecture
-Host	Role	Logging
-Windows 11	Monitored endpoint	Windows Security & System Event Logs (Advanced Audit Policy), forwarded to Splunk Cloud via Universal Forwarder
-Kali Linux	Attacker	Source of simulated attacks (Hydra, Nmap, Metasploit, Atomic Red Team)
-Metasploitable	Vulnerable target	Exploitation target for Attack 3
-Splunk Cloud	SIEM	Ingests and indexes Windows endpoint logs; all detection built in SPL
+**Enable Advanced Audit Policy** (as Administrator, in an elevated PowerShell or Command Prompt):
 
-See 01-lab-setup/ for the full build steps, including how endpoint visibility was configured without Sysmon, using native Windows auditing (Event IDs 4688, 4624/4625, 4698) with command-line logging enabled.
+```
+auditpol /set /subcategory:"Process Creation" /success:enable
+auditpol /set /subcategory:"Logon" /success:enable /failure:enable
+auditpol /set /subcategory:"Other Object Access Events" /success:enable
+```
 
-Detections
+**Enable command-line logging** in process creation events (Event ID 4688), so the audit log captures the full command line, not just the process name — this is the closest native equivalent to Sysmon's Event ID 1:
 
-Each attack was simulated, then detected and documented independently, with SPL queries, screenshots, and MITRE ATT&CK mapping.
+Local Group Policy Editor → Computer Configuration → Administrative Templates → System → Audit Process Creation → **Include command line in process creation events** → Enabled.
 
-#	Scenario	Technique detected	MITRE ATT&CK
-1	Brute-force login	Repeated failed authentication	T1110
-2	Network reconnaissance	Port/service scanning	T1046
-3	Exploitation	Remote exploitation of vulnerable service	T1190
-4	Persistence	Scheduled task creation	T1053.005
-Incident report
+Or via registry:
+```
+reg add "HKLM\SOFTWARE\Microsoft\Windows\CurrentVersion\Policies\System\Audit" /v ProcessCreationIncludeCmdLine_Enabled /t REG_DWORD /d 1
+```
 
-03-incident-report/ ties multiple attacks into one narrative — an attacker performing recon, brute-forcing credentials, exploiting a service, and establishing persistence — written as a full incident report: timeline, IOCs, chain-of-custody-style evidence log, and response recommendations.
+**Key event IDs used throughout this lab:**
 
-Skills demonstrated
-SPL query writing and search optimization
-Windows security log analysis (without Sysmon — native auditing only)
-Attack simulation and detection engineering
-MITRE ATT&CK mapping
-Incident documentation and reporting
-Notes on scope
+| Event ID | Meaning |
+|---|---|
+| 4624 | Successful logon |
+| 4625 | Failed logon |
+| 4688 | New process created (with command line, once enabled above) |
+| 4698 | Scheduled task created |
+| 4720 | New user account created |
 
-This is a personal, isolated lab environment. No production systems, third-party networks, or public infrastructure were involved in any simulated attack.
+## 2. Forwarding logs to Splunk Enterprise (self-hosted, local)
+
+Splunk Enterprise runs locally on the Windows 11 VM itself (`splunkd` service, web UI at `localhost:8000`). Since the indexer and the forwarder are on the same machine, this lab uses the **HTTP Event Collector (HEC)** over `localhost` rather than a remote receiver.
+
+1. In the Splunk web UI: **Settings → Data Inputs → HTTP Event Collector → New Token**. Name it (e.g., `win11-endpoint`), select or create an index (e.g., `soc_lab`), and note the generated token.
+2. Install **Splunk Universal Forwarder** on the same Windows 11 VM.
+3. Configure `inputs.conf` (in `SplunkUniversalForwarder\etc\system\local\`) to monitor the Security and System event logs:
+
+```ini
+[WinEventLog://Security]
+disabled = false
+index = soc_lab
+
+[WinEventLog://System]
+disabled = false
+index = soc_lab
+```
+
+4. Configure `outputs.conf` (same folder) to send to the local HEC endpoint with the token from step 1. Because a local Splunk Enterprise install uses a self-signed SSL cert by default, `sslVerifyServerCert` is set to `false` here — acceptable for an isolated local lab, not for production:
+
+```ini
+[httpout]
+httpEventCollectorToken = <your-HEC-token>
+uri = https://localhost:8088
+sslVerifyServerCert = false
+```
+
+5. Restart the forwarder service so both config files take effect: `splunk.exe restart` (run from the forwarder's `bin` folder).
+
+6. Confirm data is arriving, searching from the local Splunk web UI (`localhost:8000`):
+```
+index=soc_lab | stats count by source
+```
+
+## 3. Baseline
+
+Before running any attacks, generate normal activity for a day — regular logins, regular process activity — so later detections have a "quiet" baseline to compare against. Screenshot a basic dashboard here showing normal login/process volume.
