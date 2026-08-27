@@ -71,4 +71,6 @@ index=soc_lab | stats count by source
 
 ## 3. Baseline
 
-Before running any attacks, generate normal activity for a day — regular logins, regular process activity — so later detections have a "quiet" baseline to compare against. Screenshot a basic dashboard here showing normal login/process volume.
+Before running any attacks, generate normal activity for a day — regular logins, regular process activity — so later detections have a "quiet" baseline to compare against. Screenshot of a basic dashboard here showing normal login/process volume.
+<img width="1209" height="857" alt="screenshots:00-baseline-dashboard" src="https://github.com/user-attachments/assets/383aa516-550c-40cb-8323-8079dbd4744c" />
+
