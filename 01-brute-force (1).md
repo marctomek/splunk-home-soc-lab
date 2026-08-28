@@ -51,9 +51,9 @@ This is a good example of a "log source went silent with no errors" investigatio
 - [x] **Target:** `192.168.64.12` (Metasploitable), account `msfadmin`
 - [x] **Failed attempts:** 12:00:17 — six failed attempts in the same second (ports 34634–34702), consistent with Hydra's parallel connection threads
 - [x] **Successful login:** 12:00:15, port 34632 — `Accepted password for msfadmin from 192.168.64.11`
-- [x] Screenshot: `screenshots/02-bruteforce-hydra.png` — Hydra output confirming the cracked credential
-- [x] Screenshot: `screenshots/03-bruteforce-authlog.png` — target-side auth.log showing failed attempts and the accepted login
-- [x] Screenshot: `screenshots/04-bruteforce-splunk-live.png` — same attack rerun after syslog forwarding was fixed, showing the failed/accepted login events live in Splunk via SPL
+- [x] Screenshot: <img width="877" height="577" alt="screenshots:02-bruteforce-hydra" src="https://github.com/user-attachments/assets/35c7aa4e-adde-44fc-bde4-a2d5bfa6e23d" /> — Hydra output confirming the cracked credential
+- [x] Screenshot: <img width="1470" height="956" alt="screenshots:03-bruteforce-authlog" src="https://github.com/user-attachments/assets/828003a4-2f76-458c-9621-7e425ff0492e" /> — target-side auth.log showing failed attempts and the accepted login
+- [x] Screenshot: <img width="1228" height="710" alt="screenshots:04-bruteforce-splunk-live" src="https://github.com/user-attachments/assets/9d7f1e4b-fa93-4204-9de3-a12017a9fcdb" /> — same attack rerun after syslog forwarding was fixed, showing the failed/accepted login events live in Splunk via SPL
 
 **Interesting timing detail:** the accepted login (12:00:15) timestamps *before* the failed attempts captured in the same log excerpt (12:00:17). This isn't a logging error — Hydra runs multiple parallel login threads by default, so a thread that happens to try the correct password can succeed before other threads finish working through incorrect guesses. Worth noting explicitly rather than assuming the log is out of order.
 
@@ -64,3 +64,4 @@ Legitimate users mistyping passwords, expired credentials, or service accounts w
 ## Response recommendation
 
 Account lockout policy, source IP blocking at the firewall/`iptables`, and alerting on any successful login immediately following a failed-login burst from the same source. Forwarding Linux auth logs into the SIEM (rather than relying on manual log review) was identified as a gap during this exercise and has since been implemented — see the syslog forwarding setup above.
+
