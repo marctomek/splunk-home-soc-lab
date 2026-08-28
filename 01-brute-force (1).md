@@ -24,7 +24,7 @@ Host *
 
 Metasploitable was initially **not part of the Splunk forwarding pipeline** — only the Windows 11 endpoint forwarded logs via the Universal Forwarder. The first pass of this detection was pulled directly from the target's own `/var/log/auth.log` to work around that gap honestly rather than fake full SIEM visibility.
 
-That gap has since been closed: Metasploitable's classic `syslogd` now forwards `auth`/`authpriv` facility logs to Splunk in real time over UDP 514, using Splunk's built-in UDP data input (see [`01-lab-setup`](../01-lab-setup) for the full forwarding setup). The attack was rerun after forwarding was confirmed working, and the same detection is now fully SPL-based:
+That gap has since been closed: Metasploitable's classic `syslogd` now forwards `auth`/`authpriv` facility logs to Splunk in real time over UDP 514, using Splunk's built-in UDP data input (see [`01-lab-setup/README.md`](../01-lab-setup/README.md) for the full forwarding setup). The attack was rerun after forwarding was confirmed working, and the same detection is now fully SPL-based:
 
 ```spl
 index=soc_lab sourcetype=syslog host=192.168.64.12 "Failed password" OR "Accepted password"
