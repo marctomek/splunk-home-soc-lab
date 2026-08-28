@@ -83,4 +83,5 @@ Then in Splunk: `index=soc_lab "test syslog forward"`
 
 ## 4. Baseline
 
-Before running any attacks, generate normal activity for a day — regular logins, regular process activity — so later detections have a "quiet" baseline to compare against. Screenshot a basic dashboard here showing normal login/process volume.
+Before running any attacks, generate normal activity for a day — regular logins, regular process activity — so later detections have a "quiet" baseline to compare against. <img width="1209" height="857" alt="01-baseline-dashboard" src="https://github.com/user-attachments/assets/303e6f2a-c015-4ccc-ac30-0c73667ba227" />
+Screenshot of a basic dashboard here showing normal login/process volume.
