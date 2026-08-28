@@ -9,21 +9,16 @@
 Sysmon wasn't available in this environment, so endpoint visibility was built entirely on native Windows auditing — which is worth documenting on its own, since many real environments run without Sysmon too.
 
 **Enable Advanced Audit Policy** (as Administrator, in an elevated PowerShell or Command Prompt):
-
-```
 auditpol /set /subcategory:"Process Creation" /success:enable
 auditpol /set /subcategory:"Logon" /success:enable /failure:enable
 auditpol /set /subcategory:"Other Object Access Events" /success:enable
-```
 
 **Enable command-line logging** in process creation events (Event ID 4688), so the audit log captures the full command line, not just the process name — this is the closest native equivalent to Sysmon's Event ID 1:
 
 Local Group Policy Editor → Computer Configuration → Administrative Templates → System → Audit Process Creation → **Include command line in process creation events** → Enabled.
 
 Or via registry:
-```
 reg add "HKLM\SOFTWARE\Microsoft\Windows\CurrentVersion\Policies\System\Audit" /v ProcessCreationIncludeCmdLine_Enabled /t REG_DWORD /d 1
-```
 
 **Key event IDs used throughout this lab:**
 
@@ -65,10 +60,8 @@ sslVerifyServerCert = false
 5. Restart the forwarder service so both config files take effect: `splunk.exe restart` (run from the forwarder's `bin` folder).
 
 6. Confirm data is arriving, searching from the local Splunk web UI (`localhost:8000`):
-```
-index=soc_lab | stats count by source
-```
-
+7. index=soc_lab | stats count by source
+8. 
 ## 3. Forwarding logs from Metasploitable (syslog)
 
 Metasploitable runs classic BSD-style `syslogd`, which supports forwarding to a remote host natively — no package installs needed, useful given how outdated Metasploitable's package repos are.
@@ -76,9 +69,7 @@ Metasploitable runs classic BSD-style `syslogd`, which supports forwarding to a 
 1. In Splunk: **Settings → Data Inputs → UDP → New Local UDP**, port `514`, source type `syslog`, index `soc_lab`.
 2. On Windows, open a firewall rule allowing inbound UDP on port 514 (Windows Defender Firewall with Advanced Security → Inbound Rules → New Rule → Port → UDP → 514 → Allow).
 3. On Metasploitable, edit `/etc/syslog.conf` and add, using a **real tab character** (not spaces) between the fields:
-```
-auth,authpriv.*		@<windows11-ip>
-```
+4. auth,authpriv.* @<windows11-ip>
 4. Restart syslogd: `sudo /etc/init.d/sysklogd restart`
 
 **Troubleshooting notes (a realistic "log source went silent" investigation):**
@@ -87,9 +78,7 @@ auth,authpriv.*		@<windows11-ip>
 - The actual bug: classic `syslogd` only supports `@hostname` for remote forwarding, **not** `@hostname:port`. Using `@<ip>:514` caused every message to silently fail with no error anywhere. Removing the port suffix (514 is the default anyway) fixed it immediately.
 
 Once working, confirm with a manual test message before relying on real attack traffic:
-```
 logger -p auth.info "test syslog forward message"
-```
 Then in Splunk: `index=soc_lab "test syslog forward"`
 
 ## 4. Baseline
