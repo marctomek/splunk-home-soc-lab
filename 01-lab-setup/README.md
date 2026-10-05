@@ -1,9 +1,3 @@
-# Lab Setup
-
-## Network diagram
-
-*(Add a screenshot or simple diagram here — even a hand-drawn box diagram exported as PNG works. Show: Windows 11, Kali, Metasploitable, and their IPs on the isolated virtual network.)*
-
 ## 1. Endpoint visibility without Sysmon
 
 Sysmon wasn't available in this environment, so endpoint visibility was built entirely on native Windows auditing — which is worth documenting on its own, since many real environments run without Sysmon too.
